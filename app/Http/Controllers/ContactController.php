@@ -63,4 +63,80 @@ class ContactController extends Controller
     {
         return view('contact.thanks');
     }
+
+    /**
+     * 検索条件に一致するデータをBOM付きCSVとしてエクスポート
+     */
+    public function export(Request $request)
+    {
+        // 1. 検索クエリの構築（一覧画面と共通の絞り込みロジック）
+        $query = Contact::with('category');
+
+        if ($request->filled('keyword')) {
+            $keyword = $request->input('keyword');
+            $query->where(function ($q) use ($keyword) {
+                $q->where('first_name', 'like', '%' . $keyword . '%')
+                  ->orWhere('last_name', 'like', '%' . $keyword . '%')
+                  ->orWhere('email', 'like', '%' . $keyword . '%');
+            });
+        }
+
+        if ($request->filled('gender') && $request->input('gender') != 0) {
+            $query->where('gender', $request->input('gender'));
+        }
+
+        if ($request->filled('category_id')) {
+            $query->where('category_id', $request->input('category_id'));
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('created_at', $request->input('date'));
+        }
+
+        // 新着順（最新順）で全件取得
+        $contacts = $query->latest()->get();
+
+        // 2. CSV出力の準備（Streamを用いてメモリに優しく処理）
+        $callback = function() use ($contacts) {
+            $file = fopen('php://output', 'w');
+            
+            // 【重要】Excel文字化けを防ぐ「BOM（Byte Order Mark）」をファイルの先頭に出力
+            fwrite($file, pack('C*', 0xEF, 0xBB, 0xBF));
+
+            // ヘッダー行を出力
+            $header = ['ID', '氏名', '性別', 'メール', '電話', '住所', '建物', 'カテゴリ', '内容', '作成日時'];
+            fputcsv($file, $header);
+
+            foreach ($contacts as $contact) {
+                $genderStr = match ($contact->gender) {
+                    1 => '男性',
+                    2 => '女性',
+                    3 => 'その他',
+                    default => '不明',
+                };
+
+                fputcsv($file, [
+                    $contact->id,
+                    $contact->first_name . ' ' . $contact->last_name,
+                    $genderStr,
+                    $contact->email,
+                    $contact->tel,
+                    $contact->address,
+                    $contact->building,
+                    $contact->category?->name ?? '未選択',
+                    $contact->detail,
+                    $contact->created_at->format('Y-m-d H:i:s'),
+                ]);
+            }
+            fclose($file);
+        };
+
+        // 3. レスポンスヘッダーの設定（ファイル名を指定してダウンロードさせる）
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="contacts_' . now()->format('YmdHis') . '.csv"',
+        ];
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

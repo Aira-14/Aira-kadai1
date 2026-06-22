@@ -75,9 +75,9 @@ class ContactController extends Controller
         if ($request->filled('keyword')) {
             $keyword = $request->input('keyword');
             $query->where(function ($q) use ($keyword) {
-                $q->where('first_name', 'like', '%' . $keyword . '%')
-                  ->orWhere('last_name', 'like', '%' . $keyword . '%')
-                  ->orWhere('email', 'like', '%' . $keyword . '%');
+                $q->where('first_name', 'like', '%'.$keyword.'%')
+                    ->orWhere('last_name', 'like', '%'.$keyword.'%')
+                    ->orWhere('email', 'like', '%'.$keyword.'%');
             });
         }
 
@@ -97,9 +97,9 @@ class ContactController extends Controller
         $contacts = $query->latest()->get();
 
         // 2. CSV出力の準備（Streamを用いてメモリに優しく処理）
-        $callback = function() use ($contacts) {
+        $callback = function () use ($contacts) {
             $file = fopen('php://output', 'w');
-            
+
             // 【重要】Excel文字化けを防ぐ「BOM（Byte Order Mark）」をファイルの先頭に出力
             fwrite($file, pack('C*', 0xEF, 0xBB, 0xBF));
 
@@ -117,7 +117,7 @@ class ContactController extends Controller
 
                 fputcsv($file, [
                     $contact->id,
-                    $contact->first_name . ' ' . $contact->last_name,
+                    $contact->first_name.' '.$contact->last_name,
                     $genderStr,
                     $contact->email,
                     $contact->tel,
@@ -133,8 +133,8 @@ class ContactController extends Controller
 
         // 3. レスポンスヘッダーの設定（ファイル名を指定してダウンロードさせる）
         $headers = [
-            'Content-Type'        => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="contacts_' . now()->format('YmdHis') . '.csv"',
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="contacts_'.now()->format('YmdHis').'.csv"',
         ];
 
         return response()->stream($callback, 200, $headers);

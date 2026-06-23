@@ -1,9 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ContactController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\TagController;
+use Illuminate\Support\Facades\Route;
 
 // 一般ユーザー用お問い合わせフロー
 Route::get('/', [ContactController::class, 'index'])->name('contact.index');

@@ -23,9 +23,9 @@ class ContactController extends Controller
         if ($request->filled('keyword')) {
             $keyword = $request->input('keyword');
             $query->where(function ($q) use ($keyword) {
-                $q->where('first_name', 'like', '%' . $keyword . '%')
-                  ->orWhere('last_name', 'like', '%' . $keyword . '%')
-                  ->orWhere('email', 'like', '%' . $keyword . '%');
+                $q->where('first_name', 'like', '%'.$keyword.'%')
+                    ->orWhere('last_name', 'like', '%'.$keyword.'%')
+                    ->orWhere('email', 'like', '%'.$keyword.'%');
             });
         }
 
@@ -94,6 +94,7 @@ class ContactController extends Controller
     public function destroy(Contact $contact): JsonResponse
     {
         $contact->delete();
+
         return response()->json(null, 204);
     }
 }

@@ -30,6 +30,7 @@ class AdminAndContactTest extends TestCase
         $category = Category::create(['content' => '商品のお届けについて']);
         $tag = Tag::create(['name' => '質問']);
 
+        $this->withoutExceptionHandling();
         $response = $this->get('/');
         $response->assertStatus(200);
     }
@@ -373,5 +374,93 @@ class AdminAndContactTest extends TestCase
         // コントローラーまで到達して正常（200）にCSVが返ってきていることを厳密に検証
         $response->assertOk();
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+    }
+
+    /**
+     * 管理者登録画面：バリデーションエラーのカスタムメッセージ検証
+     */
+    public function test_admin_registration_validation_custom_messages()
+    {
+        // 名前が未入力
+        $response = $this->post('/register', ['name' => '']);
+        $response->assertSessionHasErrors(['name' => 'お名前を入力してください']);
+
+        // メールアドレスが未入力 & メール形式ではない
+        $response = $this->post('/register', ['email' => '']);
+        $response->assertSessionHasErrors(['email' => 'メールアドレスを入力してください']);
+
+        $response = $this->post('/register', ['email' => 'not-an-email']);
+        $response->assertSessionHasErrors(['email' => 'メールアドレスはメール形式で入力してください']);
+
+        // パスワード未入力 & 8文字未満 & 確認用不一致
+        $response = $this->post('/register', ['password' => '']);
+        $response->assertSessionHasErrors(['password' => 'パスワードを入力してください']);
+
+        $response = $this->post('/register', [
+            'password' => 'short',
+            'password_confirmation' => 'short',
+        ]);
+        $response->assertSessionHasErrors(['password' => 'パスワードは8文字以上で入力してください']);
+
+        $response = $this->post('/register', [
+            'password' => 'password123',
+            'password_confirmation' => 'different123',
+        ]);
+        $response->assertSessionHasErrors(['password' => 'パスワードと一致しません']);
+    }
+
+    /**
+     * ログイン画面：バリデーションおよび認証失敗のカスタムメッセージ検証
+     */
+    public function test_login_validation_and_failed_custom_messages()
+    {
+        // メールアドレスが未入力
+        $response = $this->post('/login', ['email' => '', 'password' => 'password']);
+        $response->assertSessionHasErrors(['email' => 'メールアドレスを入力してください']);
+
+        // パスワードが未入力
+        $response = $this->post('/login', ['email' => 'test@example.com', 'password' => '']);
+        $response->assertSessionHasErrors(['password' => 'パスワードを入力してください']);
+
+        // 入力情報が誤っている場合
+        $response = $this->post('/login', [
+            'email' => 'wrong@example.com',
+            'password' => 'wrongpassword',
+        ]);
+        $response->assertSessionHasErrors(['email' => 'ログイン情報が登録されていません']);
+    }
+
+    /**
+     * お問い合わせ：電話番号が3分割で送信された場合の正常系・異常系テスト
+     */
+    public function test_contact_form_tel_parts_integration()
+    {
+        $category = Category::create(['content' => '商品のお届けについて']);
+
+        // 正常系：3分割された電話番号が正しく結合されて確認画面に遷移できるか
+        $response = $this->post('/contacts/confirm', [
+            'first_name' => '太郎',
+            'last_name' => '山田',
+            'gender' => 1,
+            'email' => 'test@example.com',
+            'tel1' => '090',
+            'tel2' => '1234',
+            'tel3' => '5678',
+            'address' => '東京都渋谷区',
+            'category_id' => $category->id,
+            'detail' => 'テスト内容です',
+        ]);
+
+        $response->assertStatus(200);
+        // ビューに結合された validated データが渡されているか検証
+        $response->assertViewHas('validated.tel', '09012345678');
+
+        // 異常系：一部の番号が欠けていて prepareForValidation がスキップされた場合
+        $response = $this->post('/contacts/confirm', [
+            'tel1' => '090',
+            'tel2' => '', // 空白
+            'tel3' => '5678',
+        ]);
+        $response->assertSessionHasErrors(['tel' => '電話番号を入力してください']);
     }
 }

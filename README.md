@@ -1,8 +1,13 @@
 ## 環境構築
-**Dockerビルド**
+**Docker&laravelビルド**
 1. `git clone https://github.com/Aira-14/Aira-kadai1`
+
 2. DockerDesktopアプリを立ち上げる
+
 3. 「.env.example」ファイルを コピーして「.env」を作成し、DBの設定を変更
+``` bash
+cp .env.example .env
+```
 ``` text
 DB_CONNECTION=mysql
 DB_HOST=mysql
@@ -22,27 +27,17 @@ docker run --rm \
 ./vendor/bin/sail up -d
 ```
 
-**Laravel環境構築**
-1. 「.env.example」ファイルを コピーして「.env」を作成し、DBの設定を変更
-``` text
-DB_CONNECTION=mysql
-DB_HOST=mysql
-DB_PORT=3306
-DB_DATABASE=laravel
-DB_USERNAME=sail
-DB_PASSWORD=password
-```
-2. アプリケーションキーの作成
+5. アプリケーションキーの作成
 ``` bash
 ./vendor/bin/sail artisan key:generate
 ```
 
-3. マイグレーションの実行
+6. マイグレーションの実行
 ``` bash
 ./vendor/bin/sail artisan migrate
 ```
 
-4. シーディングの実行
+7. シーディングの実行
 ``` bash
 ./vendor/bin/sail artisan db:seed
 ```
@@ -111,13 +106,6 @@ erDiagram
 2. 開発サーバーの起動
 ``` bash
 ./vendor/bin/sail npm run dev
-```
-
-*注意: resources/css/app.css には、Tailwind CSSを有効化するため以下が記述されている必要があります*
-```
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 ```
 
 ## URL

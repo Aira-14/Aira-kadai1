@@ -15,6 +15,19 @@ class StoreContactRequest extends FormRequest
     }
 
     /**
+     * 分割して送信された電話番号（tel1, tel2, tel3）を結合して 'tel' にセットする
+     */
+    protected function prepareForValidation(): void
+    {
+        // tel1, tel2, tel3 がすべて入力されている場合のみ結合して tel を生成
+        if ($this->filled(['tel1', 'tel2', 'tel3'])) {
+            $this->merge([
+                'tel' => $this->input('tel1').$this->input('tel2').$this->input('tel3'),
+            ]);
+        }
+    }
+
+    /**
      * 要件定義に基づくバリデーションルール
      */
     public function rules(): array

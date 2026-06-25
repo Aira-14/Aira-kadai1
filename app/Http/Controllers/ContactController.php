@@ -28,15 +28,15 @@ class ContactController extends Controller
      */
     public function confirm(StoreContactRequest $request): View
     {
-        $inputs = $request->validated();
+        $validated = $request->validated();
 
-        $category = Category::find($inputs['category_id']);
+        $category = Category::find($validated['category_id']);
 
         $selectedTags = isset($inputs['tag_ids'])
-            ? Tag::whereIn('id', $inputs['tag_ids'])->get()
+            ? Tag::whereIn('id', $validated['tag_ids'])->get()
             : collect();
 
-        return view('contact.confirm', compact('inputs', 'category', 'selectedTags'));
+        return view('contact.confirm', compact('validated', 'category', 'selectedTags'));
     }
 
     /**
